@@ -4,18 +4,21 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.IO;
+using System.Globalization;
 
 namespace SA2IV_Paths
 {
     class Program
     {
-        static UInt32 basado = 0;
+        static Int16 basado = 0;
         static byte unk1 = 0;
+        static UInt32 basado2 = 0;
         
 
 
         static void Main(string[] args)
         {
+            CultureInfo.DefaultThreadCurrentCulture = CultureInfo.InvariantCulture;
             Console.WriteLine("DAT folder");
             string datfilespath = Console.ReadLine();
             string[] datfiles = Directory.GetFiles(datfilespath, "*.dat");
@@ -29,35 +32,89 @@ namespace SA2IV_Paths
                 List<byte> LinkLengthList = new List<byte>();
                 var f = File.OpenRead(datfile);
                 BinaryReader br = new BinaryReader(f);
-                DatInfo di = new DatInfo(br.ReadUInt32(), br.ReadUInt32(), br.ReadUInt32(), br.ReadUInt32(), br.ReadUInt32());
+                uint a = br.ReadUInt32();
+                uint b = br.ReadUInt32();
+                uint c = br.ReadUInt32();
+                uint d = br.ReadUInt32();
+                uint e = br.ReadUInt32();
+
+                DatInfo di = new DatInfo(a, b, c, d, e);
 
                 for (int i = 0; i < di.VehicleNodesCount; i++)
                 {
                     PathNodes pn = new PathNodes();
+                    //hardcoding memaddress
+                    br.ReadUInt32();
+                    pn.MemAddress = 349765952;
 
-                    pn.MemAddress = br.ReadUInt32();
-                    pn.Zero = br.ReadUInt32();
+                    //zero hardcoding
+                    br.ReadUInt32();
+                    pn.Zero = 0;
 
-                    pn.PosX = br.ReadInt16() / 8;
-                    pn.PosY = br.ReadInt16() / 8;
-                    pn.PosZ = br.ReadInt16() / 8;
+                    pn.PosX = br.ReadInt16();
+                    pn.PosY = br.ReadInt16();
+                    pn.PosZ = br.ReadInt16();
 
-                    pn.HeuristicCost = Int16.MaxValue - 1;
+                    //lmao DON'T SKIP 
+                    br.ReadInt16();
+                    pn.HeuristicCost = 32766;
 
                     pn.LinkID = br.ReadUInt16();
-                    pn.AreaID = ushort.Parse(AreaID(datfile));
+
+                    //DON'T SKIP AREAID
+                    br.ReadUInt16();
+                    pn.AreaID = AreaID(datfile);
+                    //DON'T SKIP NODEID
+                    br.ReadUInt16();
                     pn.NodeID = NodeID++;
+
                     pn.PathWidth = br.ReadByte();
                     pn.FloodFill = br.ReadByte();
+                    //don't skip flags
                     pn.Flags = br.ReadUInt32();
 
                     PathNodesList.Add(pn);
                 }
 
-                //Skip Ped Nodes
-                for (int i = 0; i < di.PedNodesCount; i++)
+                //Ped Nodes
+                if (di.PedNodesCount != 0)
                 {
-                    br.ReadBytes(28);
+                    for (int i = 0; i < di.PedNodesCount; i++)
+                    {
+                        PathNodes pn = new PathNodes();
+                        //hardcoding memaddress
+                        br.ReadUInt32();
+                        pn.MemAddress = 349765952;
+
+                        //zero hardcoding
+                        br.ReadUInt32();
+                        pn.Zero = 0;
+
+                        pn.PosX = br.ReadInt16();
+                        pn.PosY = br.ReadInt16();
+                        pn.PosZ = br.ReadInt16();
+
+                        //lmao DON'T SKIP 
+                        br.ReadInt16();
+                        pn.HeuristicCost = 32766;
+
+                        pn.LinkID = br.ReadUInt16();
+
+                        //DON'T SKIP AREAID
+                        br.ReadUInt16();
+                        pn.AreaID = AreaID(datfile);
+                        //DON'T SKIP NODEID
+                        br.ReadUInt16();
+                        pn.NodeID = NodeID++;
+
+                        pn.PathWidth = br.ReadByte();
+                        pn.FloodFill = br.ReadByte();
+                        //don't skip flags
+                        pn.Flags = br.ReadUInt32();
+
+                        PathNodesList.Add(pn);
+                    }
+
                 }
                 //Skip Navi Nodes
                 for (int i = 0; i < di.NaviNodesCount; i++)
@@ -93,6 +150,12 @@ namespace SA2IV_Paths
                     LinkLengthList.Add(LinkLength);
                     
                 }
+
+
+
+
+
+
                 br.Close();
                 //Export IV .NOD paths
                 string nodname = Path.GetFileNameWithoutExtension(datfile).ToLowerInvariant();
@@ -102,28 +165,40 @@ namespace SA2IV_Paths
                 //Writing IV header
 
                 //Number of nodes
-                bw.Write(di.VehicleNodesCount);
+                bw.Write(di.NodesCount);
                 //Number of car-nodes
                 bw.Write(di.VehicleNodesCount);
                 //Number of intersections
-                bw.Write(basado);
+                bw.Write(basado2);
                 //Number of links
                 bw.Write(di.LinksCount);
 
+
+
+
                 for (int i = 0; i < PathNodesList.Count; i++)
                 {
-                    bw.Write(PathNodesList[i].MemAddress);
-                    bw.Write(basado);
-                    bw.Write(PathNodesList[i].AreaID = ushort.Parse(AreaID(datfile)));
-                    bw.Write(PathNodesList[i].NodeID);
-                    bw.Write(basado);
-                    bw.Write(PathNodesList[i].HeuristicCost);
-                    bw.Write(PathNodesList[i].LinkID);
-                    bw.Write(PathNodesList[i].PosX * 8);
-                    bw.Write(PathNodesList[i].PosY * 8);
-                    bw.Write(PathNodesList[i].PosZ * 128);
-                    bw.Write(PathNodesList[i].PathWidth);
-                    bw.Write(PathNodesList[i].FloodFill);
+                    decimal testing = (decimal)(PathNodesList[i].PosZ / 8f);
+                    bw.Write((UInt32)PathNodesList[i].MemAddress);
+                    bw.Write((UInt32)0);
+                    bw.Write((UInt16)PathNodesList[i].AreaID);
+                    bw.Write((UInt16)PathNodesList[i].NodeID);
+                    bw.Write((UInt32)0);
+                    bw.Write((UInt16)PathNodesList[i].HeuristicCost);
+                    bw.Write((UInt16)PathNodesList[i].LinkID);
+                    bw.Write((Int16)PathNodesList[i].PosX);
+                    bw.Write((Int16)PathNodesList[i].PosY);
+                    if ((testing * 128) > 256)
+                    {
+                        bw.Write((Int16)256);
+                    }
+                    else
+                    {
+                        bw.Write((Int16)(testing * 128));
+
+                    }
+                    bw.Write((byte)PathNodesList[i].PathWidth);
+                    bw.Write((byte)PathNodesList[i].FloodFill);
                     bw.Write(PathNodesList[i].Flags);
 
                 }
@@ -132,13 +207,13 @@ namespace SA2IV_Paths
                 {
                     bw.Write(LinksList[i].AreaID);
                     bw.Write(LinksList[i].NodeID);
-                    bw.Write(unk1);
-                    bw.Write(LinkLengthList[i]);
-                    bw.Write(20);
+                    bw.Write((byte)36);
+                    bw.Write((byte)LinkLengthList[i]);
+                    bw.Write((UInt16)0);
                 }
                 bw.Close();
 
-                
+
             }
 
 
@@ -147,9 +222,9 @@ namespace SA2IV_Paths
         }
 
 
-        public static string AreaID(string nodfile)
+        public static ushort AreaID(string nodfile)
         {
-            return Path.GetFileNameWithoutExtension(nodfile).Replace("NODES", "");
+            return ushort.Parse(Path.GetFileNameWithoutExtension(nodfile).Replace("NODES", ""));
         }
     }
 }

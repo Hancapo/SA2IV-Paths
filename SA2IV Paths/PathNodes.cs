@@ -10,10 +10,10 @@ namespace SA2IV_Paths
     {
         public uint MemAddress { get; set; }
         public uint Zero { get; set; }
-        public float PosX { get; set; }
-        public float PosY { get; set; }
-        public float PosZ { get; set; }
-        public short HeuristicCost { get; set; }
+        public Int16 PosX { get; set; }
+        public Int16 PosY { get; set; }
+        public Int16 PosZ { get; set; }
+        public ushort HeuristicCost { get; set; }
         public ushort LinkID { get; set; }
         public ushort AreaID { get; set; }
         public ushort NodeID { get; set; }
